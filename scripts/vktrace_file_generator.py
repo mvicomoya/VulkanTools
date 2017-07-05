@@ -85,9 +85,7 @@ temporary_script_porting_exclusions = ['vkGetPhysicalDeviceFeatures2KHR',
                                        'vkGetPhysicalDeviceSurfaceFormats2KHR',
                                        ]
 
-api_exclusions = ['CreateWaylandSurfaceKHR',
-                  'CreateMirSurfaceKHR',
-                  'GetPhysicalDeviceWaylandPresentationSupportKHR',
+api_exclusions = ['CreateMirSurfaceKHR',
                   'GetPhysicalDeviceMirPresentationSupportKHR',
                   'GetPhysicalDeviceDisplayPropertiesKHR',
                   'GetPhysicalDeviceDisplayPlanePropertiesKHR',
@@ -524,6 +522,7 @@ class VkTraceFileOutputGenerator(OutputGenerator):
 
         wsi_platform_manual_funcs = ['CreateWin32SurfaceKHR',
                                      'CreateXcbSurfaceKHR',
+                                     'CreateWaylandSurfaceKHR'
                                      'CreateXlibSurfaceKHR',
                                      'CreateAndroidSurfaceKHR']
         manually_replay_funcs = ['AllocateMemory',
@@ -563,8 +562,10 @@ class VkTraceFileOutputGenerator(OutputGenerator):
                                  'CreateSwapchainKHR',
                                  'GetSwapchainImagesKHR',
                                  'CreateXcbSurfaceKHR',
+                                 'CreateWaylandSurfaceKHR'
                                  'CreateXlibSurfaceKHR',
                                  'GetPhysicalDeviceXcbPresentationSupportKHR',
+                                 'GetPhysicalDeviceWaylandPresentationSupportKHR'
                                  'GetPhysicalDeviceXlibPresentationSupportKHR',
                                  'CreateWin32SurfaceKHR',
                                  'GetPhysicalDeviceWin32PresentationSupportKHR',
@@ -588,6 +589,7 @@ class VkTraceFileOutputGenerator(OutputGenerator):
         # Map APIs to functions if body is fully custom
         custom_body_dict = {'CreateInstance': self.GenReplayCreateInstance,
                             'GetPhysicalDeviceXcbPresentationSupportKHR': self.GenReplayGetPhysicalDeviceXcbPresentationSupportKHR,
+                            'GetPhysicalDeviceWaylandPresentationSupportKHR': self.GenReplayGetPhysicalDeviceWaylandPresentationSupportKHR,
                             'GetPhysicalDeviceXlibPresentationSupportKHR': self.GenReplayGetPhysicalDeviceXlibPresentationSupportKHR,
                             'GetPhysicalDeviceWin32PresentationSupportKHR': self.GenReplayGetPhysicalDeviceWin32PresentationSupportKHR }
         # Special cases for functions that use do-while loops
@@ -982,6 +984,16 @@ class VkTraceFileOutputGenerator(OutputGenerator):
         cb_body.append('            VkBool32 rval = manually_replay_vkGetPhysicalDeviceXcbPresentationSupportKHR(pPacket);')
         cb_body.append('            if (rval != pPacket->result) {')
         cb_body.append('                vktrace_LogError("Return value %d from API call (vkGetPhysicalDeviceXcbPresentationSupportKHR) does not match return value from trace file %d.",')
+        cb_body.append('                                 rval, pPacket->result);')
+        cb_body.append('                returnValue = vktrace_replay::VKTRACE_REPLAY_BAD_RETURN;')
+        cb_body.append('            }')
+        return "\n".join(cb_body)
+
+    def GenReplayGetPhysicalDeviceWaylandPresentationSupportKHR (self):
+        cb_body = []
+        cb_body.append('            VkBool32 rval = manually_replay_vkGetPhysicalDeviceWaylandPresentationSupportKHR(pPacket);')
+        cb_body.append('            if (rval != pPacket->result) {')
+        cb_body.append('                vktrace_LogError("Return value %d from API call (vkGetPhysicalDeviceWaylandPresentationSupportKHR) does not match return value from trace file %d.",')
         cb_body.append('                                 rval, pPacket->result);')
         cb_body.append('                returnValue = vktrace_replay::VKTRACE_REPLAY_BAD_RETURN;')
         cb_body.append('            }')
@@ -2226,10 +2238,12 @@ class VkTraceFileOutputGenerator(OutputGenerator):
                                          'vkCreateSwapchainKHR',
                                          'vkGetSwapchainImagesKHR',
                                          'vkQueuePresentKHR',
-                                         #TODO add Wayland, Mir
+                                         #TODO add Mir
                                          'vkCreateXcbSurfaceKHR',
+                                         'vkCreateWaylandSurfaceKHR',
                                          'vkCreateXlibSurfaceKHR',
                                          'vkGetPhysicalDeviceXcbPresentationSupportKHR',
+                                         'vkGetPhysicalDeviceWaylandPresentationSupportKHR',
                                          'vkGetPhysicalDeviceXlibPresentationSupportKHR',
                                          'vkCreateWin32SurfaceKHR',
                                          'vkGetPhysicalDeviceWin32PresentationSupportKHR',
@@ -2244,15 +2258,18 @@ class VkTraceFileOutputGenerator(OutputGenerator):
         protoFuncs = [proto.name for proto in self.cmdMembers]
         wsi_platform_manual_funcs = ['vkCreateWin32SurfaceKHR',
                                      'vkCreateXcbSurfaceKHR',
+                                     'vkCreateWaylandSurfaceKHR',
                                      'vkCreateXlibSurfaceKHR',
                                      'vkCreateAndroidSurfaceKHR',
                                      'vkGetPhysicalDeviceXcbPresentationSupportKHR',
+                                     'vkGetPhysicalDeviceWaylandPresentationSupportKHR',
                                      'vkGetPhysicalDeviceXlibPresentationSupportKHR',
                                      'vkGetPhysicalDeviceWin32PresentationSupportKHR']
         approved_ext = ['VK_KHR_surface',
                         'VK_KHR_swapchain',
                         'VK_KHR_win32_surface',
                         'VK_KHR_xcb_surface',
+                        'VK_KHR_wayland_surface',
                         'VK_EXT_debug_report',
                         'VK_KHR_descriptor_update_template']
         for func in manually_written_hooked_funcs:
